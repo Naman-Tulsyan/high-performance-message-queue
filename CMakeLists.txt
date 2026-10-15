@@ -12,26 +12,30 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(CTest)
 
-add_executable(hmq
-    src/main.cpp
+add_library(hmq_core
+    src/message_queue.cpp
 )
 
-target_compile_options(hmq PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+target_include_directories(hmq_core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-add_executable(hmq_smoke_test
-    tests/smoke_test.cpp
+target_compile_options(hmq_core PRIVATE
+    -Wall -Wextra -Wpedantic
 )
 
-target_compile_options(hmq_smoke_test PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+add_executable(hmq src/main.cpp)
+target_link_libraries(hmq PRIVATE hmq_core)
+
+add_executable(hmq_smoke_test tests/smoke_test.cpp)
+target_link_libraries(hmq_smoke_test PRIVATE hmq_core)
+
+add_executable(hmq_message_queue_test
+    tests/message_queue_test.cpp
 )
+target_link_libraries(hmq_message_queue_test PRIVATE hmq_core)
 
 if(BUILD_TESTING)
     add_test(NAME hmq_smoke_test COMMAND hmq_smoke_test)
+    add_test(NAME hmq_message_queue_test COMMAND hmq_message_queue_test)
 endif()

@@ -1,6 +1,7 @@
 #include <iostream>
 
-int main() {
+int main()
+{
     std::cout << "HMQ - High Performance Message Queue\n";
     std::cout << "Status: Initial development\n";
 
