@@ -14,6 +14,7 @@ include(CTest)
 
 add_library(hmq_core
     src/message_queue.cpp
+    src/message_log.cpp
 )
 
 target_include_directories(hmq_core PUBLIC
@@ -35,7 +36,13 @@ add_executable(hmq_message_queue_test
 )
 target_link_libraries(hmq_message_queue_test PRIVATE hmq_core)
 
+add_executable(hmq_message_log_test
+    tests/message_log_test.cpp
+)
+target_link_libraries(hmq_message_log_test PRIVATE hmq_core)
+
 if(BUILD_TESTING)
     add_test(NAME hmq_smoke_test COMMAND hmq_smoke_test)
     add_test(NAME hmq_message_queue_test COMMAND hmq_message_queue_test)
+    add_test(NAME hmq_message_log_test COMMAND hmq_message_log_test)
 endif()
