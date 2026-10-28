@@ -17,4 +17,5 @@ public:
     void append(const std::string &content);
 
     std::vector<Message> read_all() const;
+    void recover();
 };

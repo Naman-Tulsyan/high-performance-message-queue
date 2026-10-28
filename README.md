@@ -26,21 +26,8 @@ Initial development: build system and test scaffolding.
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
-Test
+
 ctest --test-dir build --output-on-failure
 
-
-Documentation
-Architecture, design decisions, learning notes, and performance
-results will be maintained in the docs/ directory.
-
-Run these commands from the project root:
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
-ctest --test-dir build --output-on-failure
-
-
-Then run the executable:
 ./build/hmq
+```

@@ -146,6 +146,102 @@ namespace
         clean_up();
     }
 
+    void test_recover_incomplete_final_header()
+    {
+        const auto path =
+            std::filesystem::temp_directory_path() /
+            "hmq_recovery_header_test.bin";
+
+        std::filesystem::remove(path);
+
+        {
+            MessageLog log(path);
+            log.append("first");
+            log.append("second");
+        }
+
+        // Simulate a crash halfway through writing a new header.
+        {
+            std::ofstream file(path, std::ios::binary | std::ios::app);
+            const char partial_header[] = {0x05, 0x00};
+            file.write(partial_header, sizeof(partial_header));
+        }
+
+        MessageLog log(path);
+        log.recover();
+
+        const auto messages = log.read_all();
+
+        assert(messages.size() == 2);
+        assert(messages[0].content == "first");
+        assert(messages[1].content == "second");
+
+        std::filesystem::remove(path);
+    }
+
+    void test_recover_incomplete_final_payload()
+    {
+        const auto path =
+            std::filesystem::temp_directory_path() /
+            "hmq_recovery_payload_test.bin";
+
+        std::filesystem::remove(path);
+
+        {
+            MessageLog log(path);
+            log.append("first");
+            log.append("second");
+        }
+
+        // Header says 5 bytes, but only 2 payload bytes are written.
+        {
+            std::ofstream file(path, std::ios::binary | std::ios::app);
+            const char partial_record[] = {
+                0x05, 0x00, 0x00, 0x00, 'h', 'i'};
+            file.write(partial_record, sizeof(partial_record));
+        }
+
+        MessageLog log(path);
+        log.recover();
+
+        const auto messages = log.read_all();
+
+        assert(messages.size() == 2);
+        assert(messages[0].content == "first");
+        assert(messages[1].content == "second");
+
+        std::filesystem::remove(path);
+    }
+
+    void test_recover_complete_log_without_modification()
+    {
+        const auto path =
+            std::filesystem::temp_directory_path() /
+            "hmq_recovery_complete_test.bin";
+
+        std::filesystem::remove(path);
+
+        {
+            MessageLog log(path);
+            log.append("first");
+            log.append("second");
+        }
+
+        const auto original_size = std::filesystem::file_size(path);
+
+        MessageLog log(path);
+        log.recover();
+
+        assert(std::filesystem::file_size(path) == original_size);
+
+        const auto messages = log.read_all();
+        assert(messages.size() == 2);
+        assert(messages[0].content == "first");
+        assert(messages[1].content == "second");
+
+        std::filesystem::remove(path);
+    }
+
 } // namespace
 
 int main()
@@ -155,6 +251,9 @@ int main()
     test_incomplete_header();
     test_incomplete_content();
     test_empty_message();
+    test_recover_incomplete_final_header();
+    test_recover_incomplete_final_payload();
+    test_recover_complete_log_without_modification();
 
     clean_up();
 
