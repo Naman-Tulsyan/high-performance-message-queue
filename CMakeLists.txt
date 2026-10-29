@@ -18,6 +18,7 @@ add_library(hmq_core
     src/message_queue.cpp
     src/message_log.cpp
     src/protocol.cpp
+    src/tcp_server.cpp
 )
 
 target_include_directories(hmq_core PUBLIC
@@ -30,6 +31,9 @@ target_compile_options(hmq_core PRIVATE
 
 add_executable(hmq src/main.cpp)
 target_link_libraries(hmq PRIVATE hmq_core)
+
+add_executable(hmq_server src/server_main.cpp)
+target_link_libraries(hmq_server PRIVATE hmq_core)
 
 add_executable(hmq_smoke_test tests/smoke_test.cpp)
 target_link_libraries(hmq_smoke_test PRIVATE hmq_core)
