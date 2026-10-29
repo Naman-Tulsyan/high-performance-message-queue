@@ -75,6 +75,28 @@ int main()
 
     assert(threw);
 
+    // Test all other message types for round-trip encoding/decoding.
+    const std::vector<hmq::protocol::MessageType> types = {
+        hmq::protocol::MessageType::PUBLISH,
+        hmq::protocol::MessageType::PUBLISH_ACK,
+        hmq::protocol::MessageType::CONSUME,
+        hmq::protocol::MessageType::CONSUME_RESPONSE};
+
+    for (const auto type : types)
+    {
+        hmq::protocol::Frame original{
+            .version = hmq::protocol::VERSION,
+            .type = type,
+            .request_id = 42,
+            .payload = {}};
+
+        const auto encoded = hmq::protocol::encode_frame(original);
+        const auto decoded = hmq::protocol::decode_frame(encoded);
+
+        assert(decoded.type == original.type);
+        assert(decoded.request_id == original.request_id);
+    }
+
     // A declared payload size that doesn't match the bytes must fail.
     threw = false;
 

@@ -18,8 +18,14 @@ namespace hmq::protocol
     enum class MessageType : std::uint16_t
     {
         PING = 0x0001,
+        PUBLISH = 0x0002,
+        CONSUME = 0x0003,
+
         PING_RESPONSE = 0x8001,
-        ERROR = 0xFFFF,
+        PUBLISH_ACK = 0x8002,
+        CONSUME_RESPONSE = 0x8003,
+
+        ERROR = 0xFFFF
     };
 
     struct Frame
