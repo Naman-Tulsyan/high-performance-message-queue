@@ -51,9 +51,13 @@ target_link_libraries(hmq_message_log_test PRIVATE hmq_core)
 add_executable(hmq_protocol_test tests/protocol_test.cpp)
 target_link_libraries(hmq_protocol_test PRIVATE hmq_core)
 
+add_executable(hmq_tcp_server_test tests/tcp_server_test.cpp)
+target_link_libraries(hmq_tcp_server_test PRIVATE hmq_core)
+
 if(BUILD_TESTING)
     add_test(NAME hmq_smoke_test COMMAND hmq_smoke_test)
     add_test(NAME hmq_message_queue_test COMMAND hmq_message_queue_test)
     add_test(NAME hmq_message_log_test COMMAND hmq_message_log_test)
     add_test(NAME hmq_protocol_test COMMAND hmq_protocol_test)
+    add_test(NAME hmq_tcp_server_test COMMAND hmq_tcp_server_test $<TARGET_FILE:hmq_server>)
 endif()
