@@ -80,7 +80,7 @@ namespace hmq
             return true;
         }
 
-        void handle_client(int client_fd)
+        void handle_client(int client_fd, Broker &broker)
         {
             while (true)
             {
@@ -113,25 +113,7 @@ namespace hmq
                 {
                     const protocol::Frame request = protocol::decode_frame(bytes);
 
-                    if (request.type != protocol::MessageType::PING)
-                    {
-                        protocol::Frame error;
-                        error.type = protocol::MessageType::ERROR;
-                        error.request_id = request.request_id;
-                        error.payload = {'U', 'n', 's', 'u', 'p', 'p', 'o', 'r', 't', 'e', 'd', ' ', 'r', 'e', 'q', 'u', 'e', 's', 't'};
-
-                        const auto response = protocol::encode_frame(error);
-
-                        if (!write_all(client_fd, response.data(), response.size()))
-                        {
-                            return;
-                        }
-                        continue;
-                    }
-
-                    protocol::Frame response;
-                    response.type = protocol::MessageType::PING_RESPONSE;
-                    response.request_id = request.request_id;
+                    const protocol::Frame response = broker.handle(request);
 
                     const auto encoded = protocol::encode_frame(response);
 
@@ -150,7 +132,7 @@ namespace hmq
 
     } // namespace
 
-    TcpServer::TcpServer(std::uint16_t port) : port_(port) {}
+    TcpServer::TcpServer(std::uint16_t port, const std::filesystem::path &log_path) : port_(port), broker_(log_path) {}
 
     void TcpServer::run()
     {
@@ -202,7 +184,7 @@ namespace hmq
                 throw std::runtime_error("Failed to accept client");
             }
 
-            handle_client(client_fd);
+            handle_client(client_fd, broker_);
             ::close(client_fd);
         }
     }

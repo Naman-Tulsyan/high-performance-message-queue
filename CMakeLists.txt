@@ -20,6 +20,7 @@ add_library(hmq_core
     src/protocol.cpp
     src/tcp_server.cpp
     src/tcp_client.cpp
+    src/broker.cpp
 )
 
 target_include_directories(hmq_core PUBLIC
@@ -60,6 +61,9 @@ target_link_libraries(hmq_tcp_client_test PRIVATE hmq_core)
 add_executable(hmq_byte_order_test tests/byte_order_test.cpp)
 target_include_directories(hmq_byte_order_test PRIVATE include)
 
+add_executable(hmq_broker_test tests/broker_test.cpp)
+target_link_libraries(hmq_broker_test PRIVATE hmq_core)
+
 if(BUILD_TESTING)
     add_test(NAME hmq_smoke_test COMMAND hmq_smoke_test)
     add_test(NAME hmq_message_queue_test COMMAND hmq_message_queue_test)
@@ -68,4 +72,5 @@ if(BUILD_TESTING)
     add_test(NAME hmq_tcp_server_test COMMAND hmq_tcp_server_test $<TARGET_FILE:hmq_server>)
     add_test(NAME hmq_tcp_client_test COMMAND hmq_tcp_client_test)
     add_test(NAME hmq_byte_order_test COMMAND hmq_byte_order_test)
+    add_test(NAME hmq_broker_test COMMAND hmq_broker_test)
 endif()

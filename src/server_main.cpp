@@ -11,13 +11,14 @@ int main(int argc, char *argv[])
     try
     {
         const auto port = (argc >= 2) ? static_cast<std::uint16_t>(std::stoi(argv[1])) : 9090UL;
+        const auto log_path = (argc >= 3) ? std::string(argv[2]) : "hmq.log";
 
         if (port == 0 || port > 65535)
         {
             throw std::runtime_error("Invalid port number");
         }
 
-        hmq::TcpServer server(static_cast<std::uint16_t>(port));
+        hmq::TcpServer server(static_cast<std::uint16_t>(port), log_path);
         server.run();
     }
     catch (const std::exception &e)
