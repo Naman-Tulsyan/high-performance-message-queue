@@ -45,4 +45,8 @@ namespace hmq::protocol
     // Throws std::runtime_error if the input is incomplete.
     Frame decode_frame(const std::vector<std::uint8_t> &bytes);
 
+    std::vector<std::uint8_t> encode_offset(std::uint64_t offset);
+
+    std::uint64_t decode_offset(const std::vector<std::uint8_t> &payload);
+
 } // namespace hmq::protocol

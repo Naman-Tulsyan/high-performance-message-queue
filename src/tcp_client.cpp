@@ -1,4 +1,5 @@
 #include "hmq/tcp_client.hpp"
+#include "hmq/byte_order.hpp"
 
 #include <array>
 #include <cerrno>
@@ -43,15 +44,6 @@ namespace hmq
 
             return true;
         }
-
-        std::uint32_t decode_u32_be(const std::uint8_t *bytes)
-        {
-            return (static_cast<std::uint32_t>(bytes[0]) << 24) |
-                   (static_cast<std::uint32_t>(bytes[1]) << 16) |
-                   (static_cast<std::uint32_t>(bytes[2]) << 8) |
-                   static_cast<std::uint32_t>(bytes[3]);
-        }
-
     } // namespace
 
     TcpClient::TcpClient(const std::string &host, std::uint16_t port)
@@ -161,7 +153,7 @@ namespace hmq
             throw std::runtime_error("Unsupported response version");
         }
 
-        const std::uint32_t payload_size = decode_u32_be(header.data() + 12);
+        const std::uint32_t payload_size = hmq::byte_order::read_u32_be(header.data() + 12);
 
         if (payload_size > protocol::MAX_PAYLOAD_SIZE)
         {

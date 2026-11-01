@@ -1,53 +1,10 @@
 #include "hmq/protocol.hpp"
+#include "hmq/byte_order.hpp"
 
 #include <stdexcept>
 
 namespace hmq::protocol
 {
-    namespace
-    {
-
-        void write_u16_be(
-            std::vector<std::uint8_t> &out,
-            std::size_t offset,
-            std::uint16_t value)
-        {
-            out[offset] = static_cast<std::uint8_t>((value >> 8) & 0xFF);
-            out[offset + 1] = static_cast<std::uint8_t>(value & 0xFF);
-        }
-
-        void write_u32_be(
-            std::vector<std::uint8_t> &out,
-            std::size_t offset,
-            std::uint32_t value)
-        {
-            out[offset] = static_cast<std::uint8_t>((value >> 24) & 0xFF);
-            out[offset + 1] = static_cast<std::uint8_t>((value >> 16) & 0xFF);
-            out[offset + 2] = static_cast<std::uint8_t>((value >> 8) & 0xFF);
-            out[offset + 3] = static_cast<std::uint8_t>(value & 0xFF);
-        }
-
-        std::uint16_t read_u16_be(
-            const std::vector<std::uint8_t> &bytes,
-            std::size_t offset)
-        {
-            return static_cast<std::uint16_t>(
-                (static_cast<std::uint16_t>(bytes[offset]) << 8) |
-                static_cast<std::uint16_t>(bytes[offset + 1]));
-        }
-
-        std::uint32_t read_u32_be(
-            const std::vector<std::uint8_t> &bytes,
-            std::size_t offset)
-        {
-            return (static_cast<std::uint32_t>(bytes[offset]) << 24) |
-                   (static_cast<std::uint32_t>(bytes[offset + 1]) << 16) |
-                   (static_cast<std::uint32_t>(bytes[offset + 2]) << 8) |
-                   static_cast<std::uint32_t>(bytes[offset + 3]);
-        }
-
-    } // namespace
-
     std::vector<std::uint8_t> encode_frame(const Frame &frame)
     {
         if (frame.version != VERSION)
@@ -67,13 +24,10 @@ namespace hmq::protocol
             bytes[i] = MAGIC[i];
         }
 
-        write_u16_be(bytes, 4, frame.version);
-        write_u16_be(bytes, 6, static_cast<std::uint16_t>(frame.type));
-        write_u32_be(bytes, 8, frame.request_id);
-        write_u32_be(
-            bytes,
-            12,
-            static_cast<std::uint32_t>(frame.payload.size()));
+        hmq::byte_order::write_u16_be(bytes.data() + 4, frame.version);
+        hmq::byte_order::write_u16_be(bytes.data() + 6, static_cast<std::uint16_t>(frame.type));
+        hmq::byte_order::write_u32_be(bytes.data() + 8, frame.request_id);
+        hmq::byte_order::write_u32_be(bytes.data() + 12, static_cast<std::uint32_t>(frame.payload.size()));
 
         for (std::size_t i = 0; i < frame.payload.size(); ++i)
         {
@@ -98,14 +52,14 @@ namespace hmq::protocol
             }
         }
 
-        const std::uint16_t version = read_u16_be(bytes, 4);
+        const std::uint16_t version = hmq::byte_order::read_u16_be(bytes.data() + 4);
 
         if (version != VERSION)
         {
             throw std::invalid_argument("Unsupported protocol version");
         }
 
-        const std::uint32_t payload_size = read_u32_be(bytes, 12);
+        const std::uint32_t payload_size = hmq::byte_order::read_u32_be(bytes.data() + 12);
 
         if (payload_size > MAX_PAYLOAD_SIZE)
         {
@@ -119,8 +73,8 @@ namespace hmq::protocol
 
         Frame frame;
         frame.version = version;
-        frame.type = static_cast<MessageType>(read_u16_be(bytes, 6));
-        frame.request_id = read_u32_be(bytes, 8);
+        frame.type = static_cast<MessageType>(hmq::byte_order::read_u16_be(bytes.data() + 6));
+        frame.request_id = hmq::byte_order::read_u32_be(bytes.data() + 8);
 
         frame.payload.assign(
             bytes.begin() + static_cast<std::ptrdiff_t>(HEADER_SIZE),
@@ -129,4 +83,19 @@ namespace hmq::protocol
         return frame;
     }
 
+    std::vector<std::uint8_t> encode_offset(std::uint64_t offset)
+    {
+        std::vector<std::uint8_t> payload(8);
+        hmq::byte_order::write_u64_be(payload.data(), offset);
+        return payload;
+    }
+
+    std::uint64_t decode_offset(const std::vector<std::uint8_t> &payload)
+    {
+        if (payload.size() != 8)
+        {
+            throw std::invalid_argument("Offset payload must contain exactly 8 bytes");
+        }
+        return hmq::byte_order::read_u64_be(payload.data());
+    }
 } // namespace hmq::protocol

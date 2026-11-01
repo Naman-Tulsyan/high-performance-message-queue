@@ -1,5 +1,6 @@
 #include "hmq/tcp_server.hpp"
 #include "hmq/protocol.hpp"
+#include "hmq/byte_order.hpp"
 
 #include <array>
 #include <cerrno>
@@ -79,14 +80,6 @@ namespace hmq
             return true;
         }
 
-        std::uint32_t decode_u32_be(const std::uint8_t *bytes)
-        {
-            return (static_cast<std::uint32_t>(bytes[0]) << 24) |
-                   (static_cast<std::uint32_t>(bytes[1]) << 16) |
-                   (static_cast<std::uint32_t>(bytes[2]) << 8) |
-                   static_cast<std::uint32_t>(bytes[3]);
-        }
-
         void handle_client(int client_fd)
         {
             while (true)
@@ -100,7 +93,7 @@ namespace hmq
 
                 // Read the advertised payload length only after receiving
                 // the complete fixed-size header.
-                const std::uint32_t payload_size = decode_u32_be(header.data() + 12);
+                const std::uint32_t payload_size = hmq::byte_order::read_u32_be(header.data() + 12);
 
                 if (payload_size > MAX_PAYLOAD)
                 {

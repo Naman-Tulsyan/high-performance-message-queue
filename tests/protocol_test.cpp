@@ -131,6 +131,67 @@ int main()
 
     assert(threw);
 
+    // Offset serialization round-trip
+    {
+        constexpr std::uint64_t offset = 258;
+
+        const auto payload = hmq::protocol::encode_offset(offset);
+
+        assert(payload.size() == 8);
+        assert(payload[6] == 0x01);
+        assert(payload[7] == 0x02);
+
+        const auto decoded_offset = hmq::protocol::decode_offset(payload);
+
+        assert(decoded_offset == offset);
+    }
+
+    // Reject malformed offset payload
+    {
+        bool rejected = false;
+
+        try
+        {
+            hmq::protocol::decode_offset({0x01, 0x02});
+        }
+        catch (const std::invalid_argument &)
+        {
+            rejected = true;
+        }
+
+        assert(rejected);
+    }
+
+    // Reject an oversized offset payload
+    {
+        bool rejected = false;
+
+        try
+        {
+            hmq::protocol::decode_offset(std::vector<std::uint8_t>(9, 0));
+        }
+        catch (const std::invalid_argument &)
+        {
+            rejected = true;
+        }
+
+        assert(rejected);
+    }
+
+    {
+        hmq::protocol::Frame request;
+        request.type = MessageType::CONSUME;
+        request.request_id = 101;
+        request.payload = hmq::protocol::encode_offset(500);
+
+        const auto bytes = hmq::protocol::encode_frame(request);
+        const auto decoded = hmq::protocol::decode_frame(bytes);
+
+        assert(decoded.type == MessageType::CONSUME);
+        assert(decoded.request_id == 101);
+        assert(hmq::protocol::decode_offset(decoded.payload) == 500);
+    }
+
     std::cout << "All protocol tests passed\n";
     return 0;
 }
