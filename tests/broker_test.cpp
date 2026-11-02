@@ -71,6 +71,66 @@ int main()
         assert(content == "hello");
     }
 
+    // Missing offset
+    {
+        hmq::Broker broker(path);
+
+        Frame request;
+        request.type = MessageType::CONSUME;
+        request.request_id = 201;
+        request.payload = encode_offset(999);
+
+        const auto response = broker.handle(request);
+
+        assert(response.type == MessageType::ERROR);
+        assert(response.request_id == 201);
+        assert(decode_error_code(response.payload) == ErrorCode::OFFSET_NOT_FOUND);
+    }
+
+    // Invalid consume payload
+    {
+        hmq::Broker broker(path);
+
+        Frame request;
+        request.type = MessageType::CONSUME;
+        request.request_id = 202;
+        request.payload = {0x01, 0x02};
+
+        const auto response = broker.handle(request);
+
+        assert(response.type == MessageType::ERROR);
+        assert(decode_error_code(response.payload) == ErrorCode::INVALID_PAYLOAD);
+    }
+
+    // Unknown request type
+    {
+        hmq::Broker broker(path);
+
+        Frame request;
+        request.type = static_cast<MessageType>(0x1234);
+        request.request_id = 203;
+
+        const auto response = broker.handle(request);
+
+        assert(response.type == MessageType::ERROR);
+        assert(decode_error_code(response.payload) == ErrorCode::UNKNOWN_REQUEST);
+    }
+
+    // Oversized publish must be rejected
+    {
+        hmq::Broker broker(path);
+
+        Frame request;
+        request.type = MessageType::PUBLISH;
+        request.request_id = 204;
+        request.payload.resize(MAX_PAYLOAD_SIZE - 7, 'x');
+
+        const auto response = broker.handle(request);
+
+        assert(response.type == MessageType::ERROR);
+        assert(decode_error_code(response.payload) == ErrorCode::MESSAGE_TOO_LARGE);
+    }
+
     fs::remove(path);
 
     std::cout << "All broker tests passed\n";

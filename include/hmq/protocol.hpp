@@ -28,6 +28,15 @@ namespace hmq::protocol
         ERROR = 0xFFFF
     };
 
+    enum class ErrorCode : std::uint16_t
+    {
+        UNKNOWN_REQUEST = 1,
+        INVALID_PAYLOAD = 2,
+        OFFSET_NOT_FOUND = 3,
+        MESSAGE_TOO_LARGE = 4,
+        INTERNAL_ERROR = 5
+    };
+
     struct Frame
     {
         std::uint16_t version = VERSION;
@@ -48,5 +57,9 @@ namespace hmq::protocol
     std::vector<std::uint8_t> encode_offset(std::uint64_t offset);
 
     std::uint64_t decode_offset(const std::vector<std::uint8_t> &payload);
+
+    std::vector<std::uint8_t> encode_error(ErrorCode code, const std::string &description);
+
+    ErrorCode decode_error_code(const std::vector<std::uint8_t> &payload);
 
 } // namespace hmq::protocol

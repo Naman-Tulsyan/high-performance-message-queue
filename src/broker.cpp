@@ -31,10 +31,10 @@ namespace hmq
         protocol::Frame response;
         response.request_id = request.request_id;
 
-        const auto error = [&](const std::string &message)
+        const auto error = [&](protocol::ErrorCode code, const std::string &message)
         {
             response.type = MessageType::ERROR;
-            response.payload.assign(message.begin(), message.end());
+            response.payload = protocol::encode_error(code, message);
             return response;
         };
 
@@ -50,7 +50,7 @@ namespace hmq
 
             if (request.payload.size() > protocol::MAX_PAYLOAD_SIZE - 8)
             {
-                return error("Message exceeds publish limit");
+                return error(protocol::ErrorCode::MESSAGE_TOO_LARGE, "Message exceeds publish limit");
             }
 
             const std::string content(request.payload.begin(), request.payload.end());
@@ -73,12 +73,12 @@ namespace hmq
             }
             catch (const std::invalid_argument &)
             {
-                return error("Invalid consume payload");
+                return error(protocol::ErrorCode::INVALID_PAYLOAD, "Invalid consume payload");
             }
 
             if (offset >= messages_.size())
             {
-                return error("Offset not found");
+                return error(protocol::ErrorCode::OFFSET_NOT_FOUND, "Offset not found");
             }
 
             const auto &message = messages_[static_cast<std::size_t>(offset)];
@@ -86,7 +86,7 @@ namespace hmq
             // 8 bytes for offset + message bytes.
             if (message.content.size() > protocol::MAX_PAYLOAD_SIZE - 8)
             {
-                return error("Message exceeds consume response limit");
+                return error(protocol::ErrorCode::MESSAGE_TOO_LARGE, "Message exceeds consume response limit");
             }
 
             response.type = MessageType::CONSUME_RESPONSE;
@@ -100,7 +100,7 @@ namespace hmq
         }
 
         default:
-            return error("Unsupported request");
+            return error(protocol::ErrorCode::UNKNOWN_REQUEST, "Unsupported request");
         }
     }
 }

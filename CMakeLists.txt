@@ -21,6 +21,8 @@ add_library(hmq_core
     src/tcp_server.cpp
     src/tcp_client.cpp
     src/broker.cpp
+    src/producer.cpp
+    src/consumer.cpp
 )
 
 target_include_directories(hmq_core PUBLIC
@@ -59,7 +61,7 @@ add_executable(hmq_tcp_client_test tests/tcp_client_test.cpp)
 target_link_libraries(hmq_tcp_client_test PRIVATE hmq_core)
 
 add_executable(hmq_byte_order_test tests/byte_order_test.cpp)
-target_include_directories(hmq_byte_order_test PRIVATE include)
+target_link_libraries(hmq_byte_order_test PRIVATE hmq_core)
 
 add_executable(hmq_broker_test tests/broker_test.cpp)
 target_link_libraries(hmq_broker_test PRIVATE hmq_core)

@@ -138,18 +138,46 @@ namespace
 
         const auto response = client.request(request);
 
-        const std::string payload(response.payload.begin(), response.payload.end());
-
-        if (response.type != hmq::protocol::MessageType::ERROR ||
-            response.request_id != request.request_id ||
-            payload != "Unsupported request")
+        if (response.type != hmq::protocol::MessageType::ERROR)
         {
-            throw std::runtime_error("Invalid unsupported-request response");
+            throw std::runtime_error("Expected ERROR response");
+        }
+
+        if (response.request_id != request.request_id)
+        {
+            throw std::runtime_error("Response request ID mismatch");
+        }
+
+        const auto code = hmq::protocol::decode_error_code(response.payload);
+
+        if (code != hmq::protocol::ErrorCode::UNKNOWN_REQUEST)
+        {
+            throw std::runtime_error("Expected UNKNOWN_REQUEST error code");
         }
 
         std::cout << "PASS: unsupported request returns ERROR\n";
     }
 
+    void test_missing_offset(hmq::TcpClient &client)
+    {
+        using namespace hmq::protocol;
+
+        Frame request;
+        request.type = MessageType::CONSUME;
+        request.request_id = 301;
+        request.payload = encode_offset(999999);
+
+        const auto response = client.request(request);
+
+        if (response.type != MessageType::ERROR ||
+            response.request_id != request.request_id ||
+            decode_error_code(response.payload) != ErrorCode::OFFSET_NOT_FOUND)
+        {
+            throw std::runtime_error("Expected OFFSET_NOT_FOUND over TCP");
+        }
+
+        std::cout << "PASS: missing offset over TCP\n";
+    }
 } // namespace
 
 int main(int argc, char *argv[]) // argv = [program name, server executable path] . eg. ./tcp_server_test ./hmq_server
@@ -168,6 +196,7 @@ int main(int argc, char *argv[]) // argv = [program name, server executable path
         test_ping(client);
         test_multiple_requests(client);
         test_unsupported_request(client);
+        test_missing_offset(client);
 
         std::cout << "All TCP server integration tests passed.\n";
         return 0;

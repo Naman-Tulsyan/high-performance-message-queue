@@ -98,4 +98,30 @@ namespace hmq::protocol
         }
         return hmq::byte_order::read_u64_be(payload.data());
     }
+
+    std::vector<std::uint8_t> encode_error(ErrorCode code, const std::string &description)
+    {
+        if (description.size() > MAX_PAYLOAD_SIZE - 2)
+        {
+            throw std::length_error("Error description exceeds maximum payload size");
+        }
+
+        std::vector<std::uint8_t> payload(2 + description.size());
+
+        hmq::byte_order::write_u16_be(payload.data(), static_cast<std::uint16_t>(code));
+
+        std::copy(description.begin(), description.end(), payload.begin() + 2);
+
+        return payload;
+    }
+
+    ErrorCode decode_error_code(const std::vector<std::uint8_t> &payload)
+    {
+        if (payload.size() < 2)
+        {
+            throw std::invalid_argument("Error payload must contain at least 2 bytes");
+        }
+        return static_cast<ErrorCode>(hmq::byte_order::read_u16_be(payload.data()));
+    }
+
 } // namespace hmq::protocol

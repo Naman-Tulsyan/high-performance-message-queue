@@ -192,6 +192,73 @@ int main()
         assert(hmq::protocol::decode_offset(decoded.payload) == 500);
     }
 
+    // Error encoding: known byte order and description
+    {
+        using namespace hmq::protocol;
+
+        const auto payload = encode_error(ErrorCode::UNKNOWN_REQUEST, "Unsupported request");
+
+        assert(payload.size() == 2 + std::string("Unsupported request").size());
+
+        assert(payload[0] == 0x00);
+        assert(payload[1] == 0x01);
+
+        assert(decode_error_code(payload) == ErrorCode::UNKNOWN_REQUEST);
+
+        const std::string description(payload.begin() + 2, payload.end());
+
+        assert(description == "Unsupported request");
+    }
+
+    // An error description is optional
+    {
+        using namespace hmq::protocol;
+
+        const auto payload = encode_error(ErrorCode::OFFSET_NOT_FOUND, "");
+
+        assert(payload.size() == 2);
+        assert(decode_error_code(payload) == ErrorCode::OFFSET_NOT_FOUND);
+    }
+
+    // Malformed error payloads must be rejected
+    {
+        using namespace hmq::protocol;
+
+        for (const auto &payload : std::vector<std::vector<std::uint8_t>>{{}, {0x00}})
+        {
+            bool threw = false;
+
+            try
+            {
+                (void)decode_error_code(payload);
+            }
+            catch (const std::invalid_argument &)
+            {
+                threw = true;
+            }
+
+            assert(threw);
+        }
+    }
+
+    // Oversized descriptions must be rejected
+    {
+        using namespace hmq::protocol;
+
+        bool threw = false;
+
+        try
+        {
+            (void)encode_error(ErrorCode::INTERNAL_ERROR, std::string(MAX_PAYLOAD_SIZE - 1, 'x'));
+        }
+        catch (const std::length_error &)
+        {
+            threw = true;
+        }
+
+        assert(threw);
+    }
+
     std::cout << "All protocol tests passed\n";
     return 0;
 }
