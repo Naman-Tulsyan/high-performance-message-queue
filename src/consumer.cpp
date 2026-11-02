@@ -40,6 +40,14 @@ namespace hmq
             throw std::runtime_error("Malformed consume response");
         }
 
+        const std::vector<std::uint8_t> offset_bytes(response.payload.begin(), response.payload.begin() + 8);
+        const std::uint64_t response_offset = protocol::decode_offset(offset_bytes);
+
+        if (response_offset != offset)
+        {
+            throw std::runtime_error("Consume response offset mismatch");
+        }
+
         return std::string(response.payload.begin() + 8, response.payload.end());
     }
 }

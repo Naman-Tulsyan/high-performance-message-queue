@@ -1,6 +1,7 @@
 
 #include "hmq/protocol.hpp"
 #include "hmq/tcp_client.hpp"
+#include "support/mock_server.hpp"
 
 #include <array>
 #include <cstdint>
@@ -17,117 +18,9 @@
 
 namespace
 {
-    using Bytes = std::vector<std::uint8_t>;
-
-    void send_all(int fd, const Bytes &bytes)
-    {
-        std::size_t sent = 0;
-
-        while (sent < bytes.size())
-        {
-            const auto result = send(fd, bytes.data() + sent, bytes.size() - sent, 0);
-
-            if (result < 0)
-            {
-                throw std::runtime_error("Mock server send failed");
-            }
-            if (result == 0)
-            {
-                throw std::runtime_error("Mock server sent zero bytes");
-            }
-
-            sent += static_cast<std::size_t>(result);
-        }
-    }
-
-    class MockServer
-    {
-    public:
-        explicit MockServer(Bytes response)
-        {
-            listener_ = socket(AF_INET, SOCK_STREAM, 0);
-
-            if (listener_ < 0)
-            {
-                throw std::runtime_error("socket failed");
-            }
-
-            sockaddr_in address{};
-            address.sin_family = AF_INET;
-            address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-            address.sin_port = 0; // Let the OS choose an available port.
-
-            if (bind(listener_, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0)
-            {
-                close(listener_);
-                listener_ = -1;
-                throw std::runtime_error("bind failed");
-            }
-
-            if (listen(listener_, 1) < 0)
-            {
-                close(listener_);
-                listener_ = -1;
-                throw std::runtime_error("listen failed");
-            }
-
-            socklen_t length = sizeof(address);
-
-            // since OS chooses the port, we need to retrieve it using getsockname
-            if (getsockname(listener_, reinterpret_cast<sockaddr *>(&address), &length) < 0)
-            {
-                close(listener_);
-                listener_ = -1;
-                throw std::runtime_error("getsockname failed");
-            }
-
-            port_ = ntohs(address.sin_port);
-
-            worker_ = std::thread([this, response = std::move(response)]
-                                  {
-                const int client_fd = accept(listener_, nullptr, nullptr);
-
-                if (client_fd < 0) {
-                    return;
-                }
-
-                try {
-                    send_all(client_fd, response);
-                } catch (...) {
-                    // The test observes the client's result.
-                }
-
-                shutdown(client_fd, SHUT_RDWR);
-                close(client_fd); });
-        }
-
-        ~MockServer()
-        {
-            if (worker_.joinable()) // checks if worker_ thread is joinable (i.e., it has not been joined or detached yet). If it is joinable, we call join() to wait for the thread to finish executing before proceeding. This ensures that the thread completes its work and any resources associated with it are properly cleaned up before the MockServer object is destroyed.
-            {
-                worker_.join();
-            }
-
-            if (listener_ >= 0)
-            {
-                close(listener_);
-            }
-        }
-
-        MockServer(const MockServer &) = delete;
-        MockServer &operator=(const MockServer &) = delete;
-
-        std::uint16_t port() const
-        {
-            return port_;
-        }
-
-    private:
-        int listener_ = -1;
-        std::uint16_t port_ = 0;
-        std::thread worker_;
-    };
-
+    using hmq::test::Bytes;
+    using hmq::test::MockServer;
+    
     Bytes make_ping_response(std::uint32_t request_id)
     {
         hmq::protocol::Frame frame;

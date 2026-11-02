@@ -69,6 +69,9 @@ target_link_libraries(hmq_broker_test PRIVATE hmq_core)
 add_executable(hmq_producer_consumer_test tests/producer_consumer_test.cpp)
 target_link_libraries(hmq_producer_consumer_test PRIVATE hmq_core)
 
+add_executable(hmq_client_api_test tests/client_api_test.cpp)
+target_link_libraries(hmq_client_api_test PRIVATE hmq_core)
+
 if(BUILD_TESTING)
     add_test(NAME hmq_smoke_test COMMAND hmq_smoke_test)
     add_test(NAME hmq_message_queue_test COMMAND hmq_message_queue_test)
@@ -79,6 +82,8 @@ if(BUILD_TESTING)
     add_test(NAME hmq_byte_order_test COMMAND hmq_byte_order_test)
     add_test(NAME hmq_broker_test COMMAND hmq_broker_test)
     add_test(NAME hmq_producer_consumer_test COMMAND hmq_producer_consumer_test $<TARGET_FILE:hmq_server>)
-    
+    add_test(NAME hmq_client_api_test COMMAND hmq_client_api_test)
+
+    set_tests_properties(hmq_client_api_test PROPERTIES TIMEOUT 10)
     set_tests_properties(hmq_producer_consumer_test PROPERTIES TIMEOUT 10)
 endif()
