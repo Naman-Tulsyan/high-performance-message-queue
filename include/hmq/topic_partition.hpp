@@ -14,6 +14,11 @@ namespace hmq
 
         TopicPartition(std::string topic_name, std::uint32_t partition_id) : topic(std::move(topic_name)), partition(partition_id)
         {
+            validate();
+        }
+
+        void validate() const
+        {
             if (topic.empty() || topic.size() > 255)
             {
                 throw std::invalid_argument("Topic name must contain 1-255 characters");
