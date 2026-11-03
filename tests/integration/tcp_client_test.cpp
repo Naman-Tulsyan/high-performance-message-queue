@@ -1,7 +1,7 @@
 
 #include "hmq/protocol.hpp"
 #include "hmq/tcp_client.hpp"
-#include "support/mock_server.hpp"
+#include "../support/mock_server.hpp"
 
 #include <array>
 #include <cstdint>

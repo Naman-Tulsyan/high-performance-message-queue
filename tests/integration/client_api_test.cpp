@@ -2,7 +2,7 @@
 #include "hmq/consumer.hpp"
 #include "hmq/producer.hpp"
 #include "hmq/protocol.hpp"
-#include "support/mock_server.hpp"
+#include "../support/mock_server.hpp"
 
 #include <cstdint>
 #include <exception>
