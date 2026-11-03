@@ -1,6 +1,6 @@
 #pragma once
 
-#include "message.hpp"
+#include "hmq/message.hpp"
 
 #include <queue>
 #include <cstddef>

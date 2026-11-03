@@ -15,33 +15,39 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(CTest)
 
 add_library(hmq_core
-    src/message_queue.cpp
-    src/message_log.cpp
-    src/protocol.cpp
-    src/tcp_server.cpp
-    src/tcp_client.cpp
-    src/broker.cpp
-    src/producer.cpp
-    src/consumer.cpp
-    src/partition_store.cpp
+    src/broker/broker.cpp
+    src/broker/partition_store.cpp
+    src/storage/message_log.cpp
+    src/storage/message_queue.cpp
+    src/network/tcp_server.cpp
+    src/network/tcp_client.cpp
+    src/protocol/protocol.cpp
+    src/client/producer.cpp
+    src/client/consumer.cpp
 )
 
-target_include_directories(hmq_core PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+target_include_directories(hmq_core
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/internal
 )
 
 target_compile_options(hmq_core PRIVATE
     -Wall -Wextra -Wpedantic
 )
 
-add_executable(hmq src/main.cpp)
+add_executable(hmq apps/hmq_main.cpp)
 target_link_libraries(hmq PRIVATE hmq_core)
+target_include_directories(hmq PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/internal)
 
-add_executable(hmq_server src/server_main.cpp)
+add_executable(hmq_server apps/server_main.cpp)
 target_link_libraries(hmq_server PRIVATE hmq_core)
+target_include_directories(hmq_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/internal)
 
-add_executable(hmq_client src/client_main.cpp)
+add_executable(hmq_client apps/client_main.cpp)
 target_link_libraries(hmq_client PRIVATE hmq_core)
+target_include_directories(hmq_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/internal)
 
 add_executable(hmq_smoke_test tests/smoke_test.cpp)
 target_link_libraries(hmq_smoke_test PRIVATE hmq_core)
@@ -81,6 +87,30 @@ target_link_libraries(hmq_partition_paths_test PRIVATE hmq_core)
 
 add_executable(hmq_partition_store_test tests/partition_store_test.cpp)
 target_link_libraries(hmq_partition_store_test PRIVATE hmq_core)
+
+foreach(test_target IN ITEMS
+    hmq_smoke_test
+    hmq_message_queue_test
+    hmq_message_log_test
+    hmq_protocol_test
+    hmq_tcp_server_test
+    hmq_tcp_client_test
+    hmq_byte_order_test
+    hmq_broker_test
+    hmq_producer_consumer_test
+    hmq_client_api_test
+    hmq_topic_partition_test
+    hmq_partition_paths_test
+    hmq_partition_store_test
+)
+    target_include_directories(${test_target} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/internal
+    )
+endforeach()
+
+target_include_directories(hmq_server PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/internal
+)
 
 if(BUILD_TESTING)
     add_test(NAME hmq_smoke_test COMMAND hmq_smoke_test)
